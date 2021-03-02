@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
@@ -12,6 +14,7 @@ fn create_tar_gz(folder_name: &str) {
     let mut tar = tar::Builder::new(tar_gz);
     tar.append_dir_all(folder_name, folder_name).unwrap();
     println!("Tarring {} to {}", folder_name, &fname);
+    fs::remove_dir_all(&folder_name).unwrap();
 }
 
 pub fn tar_all_folders() -> Result<(), Error> {
