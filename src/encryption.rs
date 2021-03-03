@@ -1,0 +1,43 @@
+#![allow(dead_code)]
+
+const FERNET_FILE: &str = ".secret.key";
+use fernet;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+use std::process;
+use std::str;
+
+// This function will encrypt a string to ciphertext using Fernet
+pub fn encrypt_to_cipher(key: &String, content: &str) -> String {
+    let fernet = fernet::Fernet::new(&key).unwrap();
+    fernet.encrypt(content.as_bytes())
+}
+
+// This function will decrypt a string to ciphertext using Fernet
+pub fn decrypt_to_plaintext(key: &String, ciphertext: &String) -> String {
+    let fernet = fernet::Fernet::new(&key).unwrap();
+    let decrypted_plaintext = fernet.decrypt(&ciphertext).unwrap();
+    str::from_utf8(&decrypted_plaintext).unwrap().to_string()
+}
+
+// This function write the Fernet key to .secret.key
+pub fn write_fernet_key_to_file(key: &String) {
+    if Path::new(FERNET_FILE).exists() {
+        println!("{} already exists [Aborting]", FERNET_FILE);
+        process::exit(1);
+    }
+    let mut file = File::create(FERNET_FILE).unwrap();
+    file.write_all(&key.as_bytes()).unwrap();
+}
+
+pub fn read_fernet_key_from_file() -> String {
+    if !Path::new(FERNET_FILE).exists() {
+        println!("{} doesn't exist", FERNET_FILE);
+        process::exit(1);
+    }
+    let mut file = File::open(FERNET_FILE).unwrap();
+    let mut key = String::new();
+    file.read_to_string(&mut key).unwrap();
+    key
+}
