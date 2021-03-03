@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
+use crate::encryption;
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
+use std::io::prelude::*;
 use std::io::Error;
 use std::sync::mpsc;
 use std::thread;
@@ -47,4 +49,20 @@ pub fn tar_all_folders() -> Result<(), Error> {
     drop(tx);
     for _ in rx {}
     Ok(())
+}
+
+pub fn encrypt_file(fname: &str, key: &String) {
+    let content = fs::read(&fname).unwrap();
+    let encrypted_content = encryption::encrypt_to_cipher(&key, &content);
+    let mut file = File::create(&fname).unwrap();
+    file.write(encrypted_content.as_bytes()).unwrap();
+}
+
+pub fn decrypt_file(fname: &str, key: &String) {
+    let mut file = File::open(&fname).unwrap();
+    let mut encrypted_content = String::new();
+    file.read_to_string(&mut encrypted_content).unwrap();
+    let decrypted_content = &*encryption::decrypt_to_plaintext(&key, &encrypted_content);
+    let mut out_file = File::create(&fname).unwrap();
+    out_file.write(decrypted_content).unwrap();
 }

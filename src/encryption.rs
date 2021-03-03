@@ -9,16 +9,16 @@ use std::process;
 use std::str;
 
 // This function will encrypt a string to ciphertext using Fernet
-pub fn encrypt_to_cipher(key: &String, content: &str) -> String {
+pub fn encrypt_to_cipher(key: &String, content: &[u8]) -> String {
     let fernet = fernet::Fernet::new(&key).unwrap();
-    fernet.encrypt(content.as_bytes())
+    fernet.encrypt(content)
 }
 
 // This function will decrypt a string to ciphertext using Fernet
-pub fn decrypt_to_plaintext(key: &String, ciphertext: &String) -> String {
+pub fn decrypt_to_plaintext(key: &String, ciphertext: &String) -> Vec<u8> {
     let fernet = fernet::Fernet::new(&key).unwrap();
     let decrypted_plaintext = fernet.decrypt(&ciphertext).unwrap();
-    str::from_utf8(&decrypted_plaintext).unwrap().to_string()
+    decrypted_plaintext
 }
 
 // This function write the Fernet key to .secret.key
@@ -31,6 +31,7 @@ pub fn write_fernet_key_to_file(key: &String) {
     file.write_all(&key.as_bytes()).unwrap();
 }
 
+// This function will read the fernet key from file
 pub fn read_fernet_key_from_file() -> String {
     if !Path::new(FERNET_FILE).exists() {
         println!("{} doesn't exist", FERNET_FILE);
