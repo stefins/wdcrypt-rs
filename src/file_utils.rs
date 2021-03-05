@@ -51,18 +51,40 @@ pub fn tar_all_folders() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn encrypt_file(fname: &str, key: &String) {
-    let content = fs::read(&fname).unwrap();
-    let encrypted_content = encryption::encrypt_to_cipher(&key, &content);
-    let mut file = File::create(&fname).unwrap();
-    file.write(encrypted_content.as_bytes()).unwrap();
+pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
+    match fs::read(&fname) {
+        Ok(content) => match File::create(&fname) {
+            Ok(mut file) => {
+                match file.write(encryption::encrypt_to_cipher(&key, &*content).as_bytes()) {
+                    Ok(_) => Ok(()),
+                    Err(err) => Err(err),
+                }
+            }
+            Err(err) => Err(err),
+        },
+        Err(err) => Err(err),
+    }
 }
 
-pub fn decrypt_file(fname: &str, key: &String) {
-    let mut file = File::open(&fname).unwrap();
+pub fn decrypt_file(fname: &str, key: &String) -> Result<(), Error> {
+    let mut file = match File::open(&fname) {
+        Ok(file) => file,
+        Err(err) => {
+            return Err(err);
+        }
+    };
     let mut encrypted_content = String::new();
-    file.read_to_string(&mut encrypted_content).unwrap();
-    let decrypted_content = &*encryption::decrypt_to_plaintext(&key, &encrypted_content);
-    let mut out_file = File::create(&fname).unwrap();
-    out_file.write(decrypted_content).unwrap();
+    file.read_to_string(&mut encrypted_content)
+        .expect("Cannot read the file");
+    match File::create(&fname) {
+        Ok(mut out_file) => {
+            out_file
+                .write(&*encryption::decrypt_to_normal(&key, &encrypted_content))
+                .expect("Cannot write to file");
+        }
+        Err(err) => {
+            return Err(err);
+        }
+    }
+    Ok(())
 }

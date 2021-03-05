@@ -14,11 +14,13 @@ pub fn encrypt_to_cipher(key: &String, content: &[u8]) -> String {
     fernet.encrypt(content)
 }
 
-// This function will decrypt a string to ciphertext using Fernet
-pub fn decrypt_to_plaintext(key: &String, ciphertext: &String) -> Vec<u8> {
+// This function will decrypt a ciphertext  to normal form using Fernet
+pub fn decrypt_to_normal(key: &String, ciphertext: &String) -> Vec<u8> {
     let fernet = fernet::Fernet::new(&key).unwrap();
-    let decrypted_plaintext = fernet.decrypt(&ciphertext).unwrap();
-    decrypted_plaintext
+    match fernet.decrypt(&ciphertext) {
+        Ok(result) => result,
+        Err(_) => panic!("Error"),
+    }
 }
 
 // This function write the Fernet key to .secret.key
