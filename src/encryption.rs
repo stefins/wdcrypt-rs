@@ -15,11 +15,16 @@ pub fn encrypt_to_cipher(key: &String, content: &[u8]) -> String {
 }
 
 // This function will decrypt a ciphertext  to normal form using Fernet
-pub fn decrypt_to_normal(key: &String, ciphertext: &String) -> Vec<u8> {
+pub fn decrypt_to_normal(
+    key: &String,
+    ciphertext: &String,
+) -> Result<Vec<u8>, fernet::DecryptionError> {
     let fernet = fernet::Fernet::new(&key).unwrap();
     match fernet.decrypt(&ciphertext) {
-        Ok(result) => result,
-        Err(_) => panic!("Error"),
+        Ok(result) => Ok(result),
+        Err(err) => {
+            return Err(err);
+        }
     }
 }
 
