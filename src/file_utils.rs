@@ -10,14 +10,28 @@ use std::sync::mpsc;
 use std::thread;
 
 // This function will create a tar file from a folder
-fn create_tar_gz(folder_name: &str) {
+fn create_tar_gz(folder_name: &str) -> Result<(), Error> {
     let mut fname = folder_name.to_string().clone();
     fname.push_str(".tar.gz");
-    let tar_gz = File::create(&fname).unwrap();
-    let mut tar = tar::Builder::new(tar_gz);
-    tar.append_dir_all(folder_name, folder_name).unwrap();
+    match File::create(&fname) {
+        Ok(tar_gz) => {
+            let mut tar = tar::Builder::new(tar_gz);
+            tar.append_dir_all(folder_name, folder_name).unwrap();
+        }
+        Err(err) => {
+            return Err(err);
+        }
+    }
     println!("Tarring {} to {}", folder_name, &fname);
-    fs::remove_dir_all(&folder_name).unwrap();
+    match fs::remove_dir_all(&folder_name) {
+        Ok(_) => {
+            println!("Tarred {} to {}", &folder_name, &fname);
+        }
+        Err(err) => {
+            return Err(err);
+        }
+    }
+    Ok(())
 }
 
 // This function will tar the entire folder in the . directory
@@ -32,7 +46,7 @@ pub fn tar_all_folders() -> Result<(), Error> {
                         let pth = path.path().display().to_string();
                         let tx = tx.clone();
                         thread::spawn(move || {
-                            create_tar_gz(&pth);
+                            create_tar_gz(&pth).unwrap();
                             tx.send(0).unwrap();
                         });
                     }
@@ -152,7 +166,6 @@ pub fn decrypt_all_files() -> Result<(), Error> {
                                         eprintln!("Error , {}", err)
                                     }
                                 }
-
                                 tx.send(1).unwrap();
                             });
                         }
