@@ -5,7 +5,7 @@ use std::fs;
 use std::fs::metadata;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::sync::mpsc;
 use std::thread;
 
@@ -77,19 +77,28 @@ pub fn decrypt_file(fname: &str, key: &String) -> Result<(), Error> {
         }
     };
     let mut encrypted_content = String::new();
-    file.read_to_string(&mut encrypted_content)
-        .expect("Cannot read the file");
-    match File::create(&fname) {
-        Ok(mut out_file) => {
-            println!("Decrypting {}", &fname);
-            out_file
-                .write(&*encryption::decrypt_to_normal(&key, &encrypted_content))
-                .expect("Cannot write to file");
-            println!("Decrypted {}", &fname);
-        }
-        Err(err) => {
-            return Err(err);
-        }
+    match file.read_to_string(&mut encrypted_content) {
+        Ok(_) => match encryption::decrypt_to_normal(&key, &encrypted_content) {
+            Ok(decrypted_content) => match File::create(&fname) {
+                Ok(mut out_file) => {
+                    println!("Decrypting {}", &fname);
+                    out_file
+                        .write(&*decrypted_content)
+                        .expect("Cannot write to file");
+                    println!("Decrypted {}", &fname);
+                }
+                Err(err) => {
+                    return Err(err);
+                }
+            },
+            Err(_) => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Cannot Decrypt the data",
+                ));
+            }
+        },
+        Err(err) => return Err(err),
     }
     Ok(())
 }
@@ -137,7 +146,13 @@ pub fn decrypt_all_files() -> Result<(), Error> {
                         let tx = tx.clone();
                         if p.path().display().to_string() != "./.secret.key" {
                             thread::spawn(move || {
-                                decrypt_file(&p.path().display().to_string(), &key).unwrap();
+                                match decrypt_file(&p.path().display().to_string(), &key) {
+                                    Ok(_) => (),
+                                    Err(err) => {
+                                        eprintln!("Error , {}", err)
+                                    }
+                                }
+
                                 tx.send(1).unwrap();
                             });
                         }
