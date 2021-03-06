@@ -152,6 +152,7 @@ pub fn decrypt_all_files() -> Result<(), Error> {
                                         eprintln!("Error , {}", err)
                                     }
                                 }
+
                                 tx.send(1).unwrap();
                             });
                         }
