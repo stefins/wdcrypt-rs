@@ -1,9 +1,10 @@
 mod encryption;
 mod file_utils;
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 
 fn main() {
     let matches = App::new("wdcrypt")
+        .setting(AppSettings::ArgRequiredElseHelp)
         .version("0.1.0")
         .author("Stef stefin2016@gmail.com")
         .about("Encrypt your current working directory")
