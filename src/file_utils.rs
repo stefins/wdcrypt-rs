@@ -16,7 +16,12 @@ fn create_tar_gz(folder_name: &str) -> Result<(), Error> {
     match File::create(&fname) {
         Ok(tar_gz) => {
             let mut tar = tar::Builder::new(tar_gz);
-            tar.append_dir_all(folder_name, folder_name).unwrap();
+            match tar.append_dir_all(folder_name, folder_name) {
+                Ok(_) => {}
+                Err(err) => {
+                    return Err(err);
+                }
+            }
         }
         Err(err) => {
             return Err(err);
@@ -65,6 +70,7 @@ pub fn tar_all_folders() -> Result<(), Error> {
     Ok(())
 }
 
+// This function will encrypt the a file using fernet key
 pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
     match fs::read(&fname) {
         Ok(content) => match File::create(&fname) {
@@ -83,6 +89,7 @@ pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
     Ok(())
 }
 
+// This function will decrypt the file using a fernet key
 pub fn decrypt_file(fname: &str, key: &String) -> Result<(), Error> {
     let mut file = match File::open(&fname) {
         Ok(file) => file,
@@ -117,6 +124,7 @@ pub fn decrypt_file(fname: &str, key: &String) -> Result<(), Error> {
     Ok(())
 }
 
+// This function will encrypt all the files in the current working directory
 pub fn encrypt_all_files() -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
     match fs::read_dir(".") {
@@ -148,6 +156,7 @@ pub fn encrypt_all_files() -> Result<(), Error> {
     Ok(())
 }
 
+// This function will decrypt all the files in the current working directory
 pub fn decrypt_all_files() -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
     match fs::read_dir(".") {
