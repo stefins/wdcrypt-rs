@@ -11,7 +11,7 @@ use std::sync::mpsc;
 use std::thread;
 
 // This function will create a tar file from a folder
-fn create_tar_gz(folder_name: &str) -> Result<(), Error> {
+pub fn create_tar_gz(folder_name: &str) -> Result<(), Error> {
     let mut fname = folder_name.to_string().clone();
     fname.push_str(".tar.gz");
     match File::create(&fname) {
@@ -101,7 +101,15 @@ pub fn decrypt_file(mut fname: &str, key: &String) -> Result<(), Error> {
     };
     let mut encrypted_content = String::new();
     fname = &fname[2..];
-    let decrypted_file_name = encryption::decrypt_to_normal(&key, &fname.to_string()).unwrap();
+    let decrypted_file_name = match encryption::decrypt_to_normal(&key, &fname.to_string()) {
+        Ok(result) => result,
+        Err(_) => {
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "Cannot Decrypt the data",
+            ));
+        }
+    };
     let decrypted_file_name = str::from_utf8(&decrypted_file_name).unwrap();
     match file.read_to_string(&mut encrypted_content) {
         Ok(_) => match encryption::decrypt_to_normal(&key, &encrypted_content) {
