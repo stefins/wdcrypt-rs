@@ -49,3 +49,31 @@ pub fn read_fernet_key_from_file() -> String {
     file.read_to_string(&mut key).unwrap();
     key
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        decrypt_to_normal, encrypt_to_cipher, read_fernet_key_from_file, write_fernet_key_to_file,
+    };
+    use std::fs;
+
+    fn clean_file() {
+        fs::remove_file(".secret.key").unwrap();
+    }
+
+    #[test]
+    fn encryption_test() {
+        let key = "IVijuDdvEix5PnxKP9_4VioeeZVCtRiLWruh3ynM6og=".to_string();
+        let test_cipher_text = encrypt_to_cipher(&key, &"hello world".as_bytes());
+        let dec_cipher_text = decrypt_to_normal(&key, &test_cipher_text).unwrap();
+        assert_eq!(dec_cipher_text, "hello world".as_bytes());
+    }
+
+    #[test]
+    fn key_file_test() {
+        let key = "IVijuDdvEix5PnxKP9_4VioeeZVCtRiLWruh3ynM6og=".to_string();
+        write_fernet_key_to_file(&key);
+        assert_eq!(read_fernet_key_from_file(), key);
+        clean_file();
+    }
+}
