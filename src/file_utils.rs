@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::encryption;
+use crate::models;
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
@@ -52,7 +53,8 @@ pub fn tar_all_folders() -> Result<(), Error> {
                         let pth = path.path().display().to_string();
                         let tx = tx.clone();
                         thread::spawn(move || {
-                            create_tar_gz(&pth).unwrap();
+                            let folder = models::Folder::new(&pth);
+                            folder.tar().unwrap();
                             tx.send(0).unwrap();
                         });
                     }
@@ -150,9 +152,11 @@ pub fn encrypt_all_files() -> Result<(), Error> {
                 match path {
                     Ok(p) => {
                         let tx = tx.clone();
-                        if p.path().display().to_string() != "./.secret.key" {
+                        let fname = p.path().display().to_string();
+                        if fname != "./.secret.key".to_string() {
                             thread::spawn(move || {
-                                encrypt_file(&p.path().display().to_string(), &key).unwrap();
+                                let file = models::File::new(&fname, key);
+                                file.encrypt();
                                 tx.send(1).unwrap();
                             });
                         }
@@ -181,14 +185,11 @@ pub fn decrypt_all_files() -> Result<(), Error> {
                 match path {
                     Ok(p) => {
                         let tx = tx.clone();
-                        if p.path().display().to_string() != "./.secret.key" {
+                        let file_name = p.path().display().to_string();
+                        if file_name != "./.secret.key" {
                             thread::spawn(move || {
-                                match decrypt_file(&p.path().display().to_string(), &key) {
-                                    Ok(_) => (),
-                                    Err(err) => {
-                                        eprintln!("Error , {}", err)
-                                    }
-                                }
+                                let file = models::File::new(&file_name, key);
+                                file.decrypt().unwrap();
                                 tx.send(1).unwrap();
                             });
                         }
