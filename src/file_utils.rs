@@ -14,7 +14,7 @@ use threadpool::ThreadPool;
 
 // This function will create a tar file from a folder
 pub fn create_tar_gz(folder_name: &str) -> Result<(), Error> {
-    let mut fname = folder_name.to_string().clone();
+    let mut fname = folder_name.to_string();
     fname.push_str(".tar.gz");
     match File::create(&fname) {
         Ok(tar_gz) => {
@@ -75,12 +75,12 @@ pub fn tar_all_folders() -> Result<(), Error> {
 }
 
 // This function will encrypt the a file using fernet key
-pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
+pub fn encrypt_file(fname: &str, key: &str) -> Result<(), Error> {
     match fs::read(&fname) {
         Ok(content) => match File::create(encryption::encrypt_to_cipher(&key, &fname.as_bytes())) {
             Ok(mut file) => {
                 println!("Encrypting {}", &fname);
-                file.write(encryption::encrypt_to_cipher(&key, &*content).as_bytes())
+                file.write_all(encryption::encrypt_to_cipher(&key, &*content).as_bytes())
                     .expect("Cannot write to file");
                 println!("Encrypted {}", &fname);
                 fs::remove_file(&fname)?;
@@ -95,7 +95,7 @@ pub fn encrypt_file(fname: &str, key: &String) -> Result<(), Error> {
 }
 
 // This function will decrypt the file using a fernet key
-pub fn decrypt_file(mut fname: &str, key: &String) -> Result<(), Error> {
+pub fn decrypt_file(mut fname: &str, key: &str) -> Result<(), Error> {
     let mut file = match File::open(&fname) {
         Ok(file) => file,
         Err(err) => {
@@ -120,7 +120,7 @@ pub fn decrypt_file(mut fname: &str, key: &String) -> Result<(), Error> {
                 Ok(mut out_file) => {
                     println!("Decrypting {}", &fname);
                     out_file
-                        .write(&*decrypted_content)
+                        .write_all(&*decrypted_content)
                         .expect("Cannot write to file");
                     println!("Decrypted {}", &fname);
                     fs::remove_file(&fname)?;
@@ -149,22 +149,19 @@ pub fn encrypt_all_files() -> Result<(), Error> {
         Ok(paths) => {
             let key = fernet::Fernet::generate_key();
             // Trying to reassign from the function (Very bad)
-            let key= encryption::write_fernet_key_to_file(key);
+            let key = encryption::write_fernet_key_to_file(key);
             for path in paths {
                 let key = key.clone();
-                match path {
-                    Ok(p) => {
-                        let tx = tx.clone();
-                        let fname = p.path().display().to_string();
-                        if fname != "./.secret.key".to_string() {
-                            pool.execute(move || {
-                                let file = models::File::new(&fname, key);
-                                file.encrypt();
-                                tx.send(1).unwrap();
-                            });
-                        }
+                if let Ok(p) = path {
+                    let tx = tx.clone();
+                    let fname = p.path().display().to_string();
+                    if fname != *"./.secret.key".to_string() {
+                        pool.execute(move || {
+                            let file = models::File::new(&fname, key);
+                            file.encrypt();
+                            tx.send(1).unwrap();
+                        });
                     }
-                    Err(_) => {}
                 }
             }
         }

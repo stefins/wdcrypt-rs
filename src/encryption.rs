@@ -1,31 +1,25 @@
 #![allow(dead_code)]
 
 const FERNET_FILE: &str = ".secret.key";
-use fernet;
+use crate::utils::ask_bool;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process;
 use std::str;
-use crate::utils::ask_bool;
 
 // This function will encrypt a string to ciphertext using Fernet
-pub fn encrypt_to_cipher(key: &String, content: &[u8]) -> String {
+pub fn encrypt_to_cipher(key: &str, content: &[u8]) -> String {
     let fernet = fernet::Fernet::new(&key).unwrap();
     fernet.encrypt(content)
 }
 
 // This function will decrypt a ciphertext  to normal form using Fernet
-pub fn decrypt_to_normal(
-    key: &String,
-    ciphertext: &String,
-) -> Result<Vec<u8>, fernet::DecryptionError> {
+pub fn decrypt_to_normal(key: &str, ciphertext: &str) -> Result<Vec<u8>, fernet::DecryptionError> {
     let fernet = fernet::Fernet::new(&key).unwrap();
     match fernet.decrypt(&ciphertext) {
         Ok(result) => Ok(result),
-        Err(err) => {
-            return Err(err);
-        }
+        Err(err) => Err(err),
     }
 }
 
@@ -33,14 +27,14 @@ pub fn decrypt_to_normal(
 pub fn write_fernet_key_to_file(key: String) -> String {
     if Path::new(FERNET_FILE).exists() {
         println!("{} already exists", FERNET_FILE);
-        if ask_bool("Do you want to use the existing key?", false).unwrap(){
-            return read_fernet_key_from_file()
+        if ask_bool("Do you want to use the existing key?", false).unwrap() {
+            return read_fernet_key_from_file();
         }
         process::exit(1);
     }
     let mut file = File::create(FERNET_FILE).unwrap();
     file.write_all(&key.as_bytes()).unwrap();
-    return key
+    key
 }
 
 // This function will read the fernet key from file

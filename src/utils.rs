@@ -25,7 +25,6 @@ pub fn ask_bool(question: &str, default: bool) -> Option<bool> {
     }
 }
 
-
 /*
 match ask_bool("Do you want to use the existing key?", false).unwrap(){
             true => {},
