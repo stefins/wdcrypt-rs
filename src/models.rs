@@ -15,11 +15,11 @@ impl<'a> File<'a> {
         file_utils::encrypt_file(&self.name, &self.fernet_key).unwrap();
     }
 
-    pub fn decrypt(&self) -> Result<(),()> {
-        match file_utils::decrypt_file(&self.name, &self.fernet_key){
+    pub fn decrypt(&self) -> Result<(), ()> {
+        match file_utils::decrypt_file(&self.name, &self.fernet_key) {
             Ok(_) => Ok(()),
-            Err(err) =>{
-                eprintln!("Error, {}",err);
+            Err(err) => {
+                eprintln!("Error, {}", err);
                 Err(())
             }
         }
@@ -34,10 +34,10 @@ impl<'a> Folder<'a> {
     pub fn new(name: &'a str) -> Self {
         Self { name: &name }
     }
-    pub fn tar(&self) -> Result<(),Error> {
-        match file_utils::create_tar_gz(&self.name){
+    pub fn tar(&self) -> Result<(), Error> {
+        match file_utils::create_tar_gz(&self.name) {
             Ok(_) => Ok(()),
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         }
     }
     #[allow(dead_code)]

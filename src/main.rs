@@ -1,6 +1,8 @@
 mod encryption;
 mod file_utils;
 mod models;
+mod utils;
+
 use clap::{App, AppSettings, Arg};
 
 fn main() {

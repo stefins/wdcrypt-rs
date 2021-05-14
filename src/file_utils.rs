@@ -10,6 +10,7 @@ use std::io::{Error, ErrorKind};
 use std::str;
 use std::sync::mpsc;
 use std::thread;
+use threadpool::ThreadPool;
 
 // This function will create a tar file from a folder
 pub fn create_tar_gz(folder_name: &str) -> Result<(), Error> {
@@ -143,10 +144,12 @@ pub fn decrypt_file(mut fname: &str, key: &String) -> Result<(), Error> {
 // This function will encrypt all the files in the current working directory
 pub fn encrypt_all_files() -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
+    let pool = ThreadPool::new(4);
     match fs::read_dir(".") {
         Ok(paths) => {
             let key = fernet::Fernet::generate_key();
-            encryption::write_fernet_key_to_file(&key);
+            // Trying to reassign from the function (Very bad)
+            let key= encryption::write_fernet_key_to_file(key);
             for path in paths {
                 let key = key.clone();
                 match path {
@@ -154,7 +157,7 @@ pub fn encrypt_all_files() -> Result<(), Error> {
                         let tx = tx.clone();
                         let fname = p.path().display().to_string();
                         if fname != "./.secret.key".to_string() {
-                            thread::spawn(move || {
+                            pool.execute(move || {
                                 let file = models::File::new(&fname, key);
                                 file.encrypt();
                                 tx.send(1).unwrap();
@@ -177,6 +180,7 @@ pub fn encrypt_all_files() -> Result<(), Error> {
 // This function will decrypt all the files in the current working directory
 pub fn decrypt_all_files() -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
+    let pool = ThreadPool::new(4);
     match fs::read_dir(".") {
         Ok(paths) => {
             let key = encryption::read_fernet_key_from_file();
@@ -187,7 +191,7 @@ pub fn decrypt_all_files() -> Result<(), Error> {
                         let tx = tx.clone();
                         let file_name = p.path().display().to_string();
                         if file_name != "./.secret.key" {
-                            thread::spawn(move || {
+                            pool.execute(move || {
                                 let file = models::File::new(&file_name, key);
                                 file.decrypt().unwrap();
                                 tx.send(1).unwrap();

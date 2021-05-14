@@ -7,6 +7,7 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::process;
 use std::str;
+use crate::utils::ask_bool;
 
 // This function will encrypt a string to ciphertext using Fernet
 pub fn encrypt_to_cipher(key: &String, content: &[u8]) -> String {
@@ -29,13 +30,17 @@ pub fn decrypt_to_normal(
 }
 
 // This function write the Fernet key to .secret.key
-pub fn write_fernet_key_to_file(key: &String) {
+pub fn write_fernet_key_to_file(key: String) -> String {
     if Path::new(FERNET_FILE).exists() {
-        println!("{} already exists [Aborting]", FERNET_FILE);
+        println!("{} already exists", FERNET_FILE);
+        if ask_bool("Do you want to use the existing key?", false).unwrap(){
+            return read_fernet_key_from_file()
+        }
         process::exit(1);
     }
     let mut file = File::create(FERNET_FILE).unwrap();
     file.write_all(&key.as_bytes()).unwrap();
+    return key
 }
 
 // This function will read the fernet key from file
@@ -72,7 +77,7 @@ mod tests {
     #[test]
     fn key_file_test() {
         let key = "IVijuDdvEix5PnxKP9_4VioeeZVCtRiLWruh3ynM6og=".to_string();
-        write_fernet_key_to_file(&key);
+        write_fernet_key_to_file(key.clone());
         assert_eq!(read_fernet_key_from_file(), key);
         clean_file();
     }
